@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proportional Symbol Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script> <!-- PapaParse library -->
+</head>
+<body>
+  <h2>A very ugly map of where the grants were taking place</h2>
+  <h3>Note: not where the organization that won the grant was based</h3>
+  <div id="map" style="width: 100%; height: 600px;"></div>
+
+
+  <script>
+    // Initialize the map
+    var map = L.map('map').setView([37.8, -96], 3); // Default coordinates and zoom level
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+  
+    // GitHub API details
+    const GITHUB_USERNAME = "jethatch";  // Replace with your GitHub username
+    const REPO_NAME = "grantmap";  // Replace with your repo name
+    const FILE_PATH = "geocode_bycityC.csv";  // Path to the CSV file in the repo
+    
+    // If you want it on a private repo, use this.
+    //const TOKEN = "";  
+    
+    const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${FILE_PATH}`;
+      
+
+    // Fetch the CSV file from the private GitHub repository
+    fetch(GITHUB_API_URL, {
+      headers: {
+        // here's where you send in your token
+        // "Authorization": `token ${TOKEN}`, 
+        
+        "Accept": "application/vnd.github.v3.raw"  // Get raw file content instead of JSON metadata
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`GitHub API error: ${response.statusText}`);
+      }
+      return response.text();
+    })
+    .then(csvData => {
+  // Parse the CSV data using PapaParse
+  Papa.parse(csvData, {
+    header: true, // First row contains headers
+    skipEmptyLines: true, // Skip empty lines
+    complete: function(results) {
+      var data = results.data;
+      
+      // min value for our funding
+      var minValue = Math.min(...data.map(row => parseFloat(row['TOTAL AWARD FUNDING AMOUNT']) || Infinity));
+      
+      // this is flannery corrected as per Roth et al.
+      function calcPropRadius(attValue) {
+        var minRadius = 350; // Minimum radius for the smallest circle
+        var radius = 1.0083 * Math.pow(attValue / minValue, 0.5715) * minRadius;
+        return radius;
+      }
+
+
+      // Process the data and add proportional symbols
+      data.forEach(row => {
+        if (row['lat'] && row['lng'] && row['TOTAL AWARD FUNDING AMOUNT']) {
+          var city = row['RECIPIENT CITY OF PERFORMANCE']; 
+          var lat = parseFloat(row['lat']);
+          var lon = parseFloat(row['lng']);
+          var funding = parseFloat(row['TOTAL AWARD FUNDING AMOUNT']);
+
+          // Calculate the circle radius based on the funding amount
+          var radius = calcPropRadius(funding)
+
+          // Create the circle and store it in a variable
+          var circle = L.circle([lat, lon], {
+            //color: 'blue',
+            weight: 0,
+            fillColor: 'blue',
+            fillOpacity: 0.5,
+            radius: radius
+          }).addTo(map);
+
+          // Bind the popup to the circle
+          circle.bindPopup(`<b>City:</b> ${city} <br> <b>Total:</b> $${funding.toLocaleString()}`);
+        }
+      });
+    }
+  });
+})
+.catch(error => console.error('Error fetching CSV:', error));
+  </script>
+</body>
+</html>
