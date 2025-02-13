@@ -35,7 +35,10 @@
       return response.text();
     })
     .then(csvData => {
+  
   // Parse the CSV data using PapaParse
+  // legitimately took the papa parse from chatgpt, i was going to handle conversion to geojson locally
+  
   Papa.parse(csvData, {
     header: true, // First row contains headers
     skipEmptyLines: true, // Skip empty lines
@@ -43,7 +46,7 @@
       var data = results.data;
       
       // min value for our funding
-      var minValue = Math.min(...data.map(row => parseFloat(row['TOTAL AWARD FUNDING AMOUNT']) || Infinity));
+      var minValue = Math.min(...data.map(row => parseFloat(row['TOTAL AWARD FUNDING AMOUNT'])));
       
       // this is flannery corrected as per Roth et al.
       function calcPropRadius(attValue) {
