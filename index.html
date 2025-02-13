@@ -19,26 +19,10 @@
     var map = L.map('map').setView([37.8, -96], 3); // Default coordinates and zoom level
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
   
-    // GitHub API details
-    const GITHUB_USERNAME = "jethatch";  // Replace with your GitHub username
-    const REPO_NAME = "leafletgrants";  // Replace with your repo name
-    const FILE_PATH = "geocode_bycityC.csv";  // Path to the CSV file in the repo
-    
-    // If you want it on a private repo, use this.
-    //const TOKEN = "";  
-    
-    const GITHUB_API_URL = `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/main/${FILE_PATH}`;
-      
+    // Fetch the CSV file from the public
+    // note to self: I didn't update properly when moving from private to public, cuz I'm a silly goose.
 
-    // Fetch the CSV file from the private GitHub repository
-    fetch(GITHUB_API_URL, {
-      headers: {
-        // here's where you send in your token
-        // "Authorization": `token ${TOKEN}`, 
-        
-        "Accept": "application/vnd.github.v3.raw"  // Get raw file content instead of JSON metadata
-      }
-    })
+    fetch('https://raw.githubusercontent.com/jethatch/leafletgrants/main/geocode_bycityC.csv')
     .then(response => {
       if (!response.ok) {
         throw new Error(`GitHub API error: ${response.statusText}`);
